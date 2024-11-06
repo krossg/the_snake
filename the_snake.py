@@ -175,7 +175,7 @@ def main():
         handle_keys(snake)
         snake.move()
         speed_snake(snake)
-        if (len(snake.positions) > 2
+        if (len(snake.positions) > const
            and snake.get_head_position() in snake.positions[1:]):
             snake.reset()
             screen.fill(BOARD_BACKGROUND_COLOR)
