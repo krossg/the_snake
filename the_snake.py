@@ -2,9 +2,6 @@ from random import randint
 
 import pygame as pg
 
-# Константа для часто используемого числа
-const = 2
-
 # Константы для размеров
 SCREEN_WIDTH, SCREEN_HEIGHT = 640, 480
 GRID_SIZE = 20
@@ -22,9 +19,16 @@ BOARD_BACKGROUND_COLOR = (0, 0, 0)
 BORDER_COLOR = (93, 216, 228)
 APPLE_COLOR = (255, 0, 0)
 SNAKE_COLOR = (0, 255, 0)
+BLANKS_COLOR = (255, 255, 0)
 
 # Скорость движения змейки:
 SPEED = 10
+
+# Минимальная длина змейки:
+MIN_LEN_SNAKE = 2
+
+# Центр игрового поля:
+CENTRAL_POSITION = ((SCREEN_WIDTH // 2), (SCREEN_HEIGHT // 2))
 
 # Настройка игрового окна:
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
@@ -39,17 +43,17 @@ clock = pg.time.Clock()
 class GameObject:
     """Базовый класс игровых объектов."""
 
-    def __init__(self, body_color=(255, 255, 0)):
+    def __init__(self, body_color=(BLANKS_COLOR)):
         """Инициализация объекта."""
-        self.position = ((SCREEN_WIDTH // const), (SCREEN_HEIGHT // const))
+        self.position = CENTRAL_POSITION
         self.body_color = body_color
 
-    def draw_cell(self, position, color=None):
+    def draw_cell(self, position, color=None, border_color=BORDER_COLOR):
         """Отрисовывает одну заданную ячейку поля."""
         color = color or self.body_color
         rect = pg.Rect(position, (GRID_SIZE, GRID_SIZE))
         pg.draw.rect(screen, color, rect)
-        pg.draw.rect(screen, BORDER_COLOR, rect, 1)
+        pg.draw.rect(screen, border_color, rect, 1)
 
     def draw(self):
         """Абстрактный метод для отрисовки объекта на экран."""
@@ -58,20 +62,18 @@ class GameObject:
 class Apple(GameObject):
     """Класс игровых объектов - Яблоко."""
 
-    def __init__(self, busy_position=list()):
+    def __init__(self, busy_position=[]):
         """Инициализация яблока на экране."""
         super().__init__(APPLE_COLOR)
         self.randomize_position(busy_position)
 
     def randomize_position(self, positions):
         """Рандомизация положения яблока на экране."""
-        while True:
+        while self.position in positions:
             self.position = (
                 randint(0, GRID_WIDTH - 1) * GRID_SIZE,
                 randint(0, GRID_HEIGHT - 1) * GRID_SIZE,
             )
-            if self.position not in positions:
-                break
 
     def draw(self):
         """Отрисовка яблока на экране."""
@@ -96,7 +98,6 @@ class Snake(GameObject):
         Добавление координат новой головы
         в начало списка и удаление последнего элемента
         если длина змейки не увеличилась.
-
         """
         head_x, head_y = self.get_head_position()
         direction_x, direction_y = self.direction
@@ -107,10 +108,6 @@ class Snake(GameObject):
         self.positions.insert(0, next_move)
 
         if length_snake == self.lenght:
-            self.last = self.positions.pop()
-        elif length_snake > self.lenght:
-            self.last = self.positions.pop()
-            self.draw_cell(self.position)
             self.last = self.positions.pop()
         else:
             self.last = None
@@ -124,22 +121,23 @@ class Snake(GameObject):
         self.positions = [self.position]
         self.lenght = 1
         self.direction = RIGHT
+        self.last = None
 
     def draw(self):
         """Отрисовка змейки."""
         # Отрисовка головы змейки
-        self.draw_cell(self.positions[0])
+        self.draw_cell(self.get_head_position())
 
         # Затирание последнего сегмента
         if self.last:
-            last_rect = pg.Rect(self.last, (GRID_SIZE, GRID_SIZE))
-            pg.draw.rect(screen, BOARD_BACKGROUND_COLOR, last_rect)
+            self.draw_cell(self.last, BOARD_BACKGROUND_COLOR,
+                           BOARD_BACKGROUND_COLOR)
 
 
-def speed_snake(func):
+def speed_snake(snake_object):
     """Изменение скорости змейки в зависимости от её длины."""
     global SPEED
-    len_snake = len(func.positions)
+    len_snake = len(snake_object.positions)
     if len_snake <= 40:
         SPEED = 10 + len_snake
 
@@ -167,7 +165,7 @@ def main():
     pg.init()
 
     snake = Snake()
-    apple = Apple()
+    apple = Apple(snake.positions)
 
     while True:
         clock.tick(SPEED)
@@ -175,11 +173,11 @@ def main():
         handle_keys(snake)
         snake.move()
         speed_snake(snake)
-        if (len(snake.positions) > const
+        if (len(snake.positions) > MIN_LEN_SNAKE
            and snake.get_head_position() in snake.positions[1:]):
             snake.reset()
             screen.fill(BOARD_BACKGROUND_COLOR)
-        if snake.get_head_position() == apple.position:
+        elif snake.get_head_position() == apple.position:
             snake.lenght += 1
             apple.randomize_position(snake.positions)
         snake.draw()
