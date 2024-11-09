@@ -28,7 +28,7 @@ SPEED = 10
 MIN_LEN_SNAKE = 2
 
 # Центр игрового поля:
-CENTRAL_POSITION = ((SCREEN_WIDTH // 2), (SCREEN_HEIGHT // 2))
+CENTRAL_POSITION = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
 
 # Настройка игрового окна:
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
@@ -43,7 +43,7 @@ clock = pg.time.Clock()
 class GameObject:
     """Базовый класс игровых объектов."""
 
-    def __init__(self, body_color=(BLANKS_COLOR)):
+    def __init__(self, body_color=BLANKS_COLOR):
         """Инициализация объекта."""
         self.position = CENTRAL_POSITION
         self.body_color = body_color
@@ -62,14 +62,16 @@ class GameObject:
 class Apple(GameObject):
     """Класс игровых объектов - Яблоко."""
 
-    def __init__(self, busy_position=[]):
+    def __init__(self, busy_position=None):
         """Инициализация яблока на экране."""
+        if busy_position is None:
+            busy_position = []
         super().__init__(APPLE_COLOR)
         self.randomize_position(busy_position)
 
-    def randomize_position(self, positions):
+    def randomize_position(self, prohibited_positions):
         """Рандомизация положения яблока на экране."""
-        while self.position in positions:
+        while self.position in prohibited_positions:
             self.position = (
                 randint(0, GRID_WIDTH - 1) * GRID_SIZE,
                 randint(0, GRID_HEIGHT - 1) * GRID_SIZE,
@@ -99,12 +101,12 @@ class Snake(GameObject):
         в начало списка и удаление последнего элемента
         если длина змейки не увеличилась.
         """
+        length_snake = len(self.positions)
         head_x, head_y = self.get_head_position()
         direction_x, direction_y = self.direction
         next_move = ((head_x + (direction_x * GRID_SIZE)) % SCREEN_WIDTH,
                      (head_y + (direction_y * GRID_SIZE)) % SCREEN_HEIGHT)
 
-        length_snake = len(self.positions)
         self.positions.insert(0, next_move)
 
         if length_snake == self.lenght:
@@ -173,8 +175,10 @@ def main():
         handle_keys(snake)
         snake.move()
         speed_snake(snake)
-        if (len(snake.positions) > MIN_LEN_SNAKE
-           and snake.get_head_position() in snake.positions[1:]):
+        if (
+            len(snake.positions) > MIN_LEN_SNAKE
+            and snake.get_head_position() in snake.positions[1:]
+           ):
             snake.reset()
             screen.fill(BOARD_BACKGROUND_COLOR)
         elif snake.get_head_position() == apple.position:
