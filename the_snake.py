@@ -27,7 +27,7 @@ SPEED = 10
 # Минимальная длина змейки:
 MIN_LEN_SNAKE = 2
 
-# Центр игрового поля:
+# Центр поля игры:
 CENTRAL_POSITION = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
 
 # Настройка игрового окна:
